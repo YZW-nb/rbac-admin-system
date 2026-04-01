@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.admin.mapper.SysMenuMapper">
+
+    <!-- 根据用户ID查询菜单列表（管理员查所有，普通用户查有权限的） -->
+    <select id="selectMenusByUserId" resultType="com.admin.entity.SysMenu">
+        SELECT DISTINCT m.id, m.parent_id, m.menu_name, m.menu_type, m.path,
+               m.component, m.perms, m.icon, m.sort, m.visible, m.status,
+               m.create_by, m.create_time, m.update_by, m.update_time
+        FROM sys_menu m
+        <where>
+            m.status = 1
+            AND m.menu_type IN (1, 2)
+            <choose>
+                <when test="userId == 1">
+                    <!-- 超级管理员查看所有菜单 -->
+                </when>
+                <otherwise>
+                    AND m.id IN (
+                        SELECT rm.menu_id
+                        FROM sys_role_menu rm
+                        INNER JOIN sys_user_role ur ON rm.role_id = ur.role_id
+                        WHERE ur.user_id = #{userId}
+                    )
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY m.parent_id, m.sort
+    </select>
+
+    <!-- 根据角色ID查询菜单ID列表 -->
+    <select id="selectMenuIdsByRoleId" resultType="Long">
+        SELECT menu_id
+        FROM sys_role_menu
+        WHERE role_id = #{roleId}
+    </select>
+
+</mapper>

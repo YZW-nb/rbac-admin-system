@@ -1,0 +1,47 @@
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Package files
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+
+# Maven
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Node
+node_modules/
+dist/
+.npm-cache/
+
+# WorkBuddy
+.workbuddy/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Upload
+uploads/
+
+# Temp
+*.tmp
+*.bak
+mvn_output*.txt

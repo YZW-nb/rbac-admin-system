@@ -1,0 +1,33 @@
+# =============================================
+# 生产环境配置
+# =============================================
+spring:
+  config:
+    activate.on-profile: prod
+
+# 生产环境关闭 SQL 日志
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+# 生产环境日志级别（只保留 warn 以上）
+logging:
+  level:
+    root: warn
+    com.admin: warn
+    com.admin.mapper: warn
+  # 建议生产环境配置文件日志输出
+  # file:
+  #   name: ./logs/admin-system.log
+  #   max-size: 100MB
+  #   max-history: 30
+
+# 生产环境禁用 Knife4j 接口文档
+knife4j:
+  enable: false
+  production: true
+
+# 生产环境 CORS 白名单（请替换为实际域名）
+admin:
+  cors:
+    allowed-origins: "http://your-frontend-domain.com,https://your-frontend-domain.com"

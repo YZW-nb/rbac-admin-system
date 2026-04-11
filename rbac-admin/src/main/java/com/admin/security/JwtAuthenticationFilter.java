@@ -2,6 +2,7 @@ package com.admin.security;
 
 import com.admin.common.constant.CommonConstant;
 import com.admin.entity.SysUser;
+import com.admin.service.TokenBlacklistService;
 import com.admin.service.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -38,6 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /** 延迟注入，打破循环依赖 */
     private UserService userService;
+    private TokenBlacklistService tokenBlacklistService;
 
     /** Token 滑动窗口续期时间（分钟），与 JwtTokenProvider 过期时间保持一致 */
     private int getTokenExpireMinutes() {
@@ -52,6 +54,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = extractToken(request);
 
         if (token != null && jwtTokenProvider.validateToken(token)) {
+            // 检查 Token 是否在黑名单中
+            if (this.tokenBlacklistService == null) {
+                this.tokenBlacklistService = applicationContext.getBean(TokenBlacklistService.class);
+            }
+
+            if (tokenBlacklistService.isBlacklisted(token)) {
+                log.debug("Token 在黑名单中，拒绝访问");
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             Long userId = jwtTokenProvider.getUserIdFromToken(token);
 
             // 检查 Redis 中 Token 是否有效（支持主动失效）

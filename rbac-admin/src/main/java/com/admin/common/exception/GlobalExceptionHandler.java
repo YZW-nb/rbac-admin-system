@@ -5,16 +5,20 @@ import com.admin.common.result.ResultCode;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
-import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.MissingServletRequestParameterException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
+import java.net.SocketTimeoutException;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +43,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UnauthorizedException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Result<?> handleUnauthorizedException(UnauthorizedException e) {
+        log.warn("未认证: {}", e.getMessage());
         return Result.error(ResultCode.UNAUTHORIZED);
     }
 
@@ -50,7 +55,7 @@ public class GlobalExceptionHandler {
         String message = e.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
-        log.error("参数校验异常: {}", message);
+        log.warn("参数校验异常: {}", message);
         return Result.error(ResultCode.PARAM_ERROR.getCode(), message);
     }
 
@@ -62,7 +67,7 @@ public class GlobalExceptionHandler {
         String message = e.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
-        log.error("参数绑定异常: {}", message);
+        log.warn("参数绑定异常: {}", message);
         return Result.error(ResultCode.PARAM_ERROR.getCode(), message);
     }
 
@@ -74,7 +79,7 @@ public class GlobalExceptionHandler {
         String message = e.getConstraintViolations().stream()
                 .map(ConstraintViolation::getMessage)
                 .collect(Collectors.joining(", "));
-        log.error("约束违反异常: {}", message);
+        log.warn("约束违反异常: {}", message);
         return Result.error(ResultCode.PARAM_ERROR.getCode(), message);
     }
 
@@ -84,7 +89,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     public Result<?> handleHttpRequestMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
-        log.error("请求方法不支持: {}", e.getMethod());
+        log.warn("请求方法不支持: {}", e.getMethod());
         return Result.error(HttpStatus.METHOD_NOT_ALLOWED.value(), "请求方法不支持: " + e.getMethod());
     }
 
@@ -93,7 +98,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public Result<?> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
-        log.error("请求参数缺失: {}", e.getParameterName());
+        log.warn("请求参数缺失: {}", e.getParameterName());
         return Result.error(HttpStatus.BAD_REQUEST.value(), "缺少必要参数: " + e.getParameterName());
     }
 
@@ -103,8 +108,45 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
     public Result<?> handleHttpMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException e) {
-        log.error("请求内容类型不支持: {}", e.getContentType());
+        log.warn("请求内容类型不支持: {}", e.getContentType());
         return Result.error(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(), "不支持的内容类型: " + e.getContentType());
+    }
+
+    /**
+     * 404 资源不存在异常
+     */
+    @ExceptionHandler(NoHandlerFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Result<?> handleNoHandlerFoundException(NoHandlerFoundException e) {
+        log.warn("资源不存在: {}", e.getRequestURL());
+        return Result.error(ResultCode.NOT_FOUND);
+    }
+
+    /**
+     * 数据库访问异常
+     */
+    @ExceptionHandler(DataAccessException.class)
+    public Result<?> handleDataAccessException(DataAccessException e) {
+        log.error("数据库访问异常: ", e);
+        return Result.error("数据库操作失败，请稍后重试");
+    }
+
+    /**
+     * Redis 连接失败异常
+     */
+    @ExceptionHandler(RedisConnectionFailureException.class)
+    public Result<?> handleRedisConnectionFailureException(RedisConnectionFailureException e) {
+        log.error("Redis 连接失败: ", e);
+        return Result.error("缓存服务暂时不可用，请稍后重试");
+    }
+
+    /**
+     * 网络超时异常
+     */
+    @ExceptionHandler(SocketTimeoutException.class)
+    public Result<?> handleSocketTimeoutException(SocketTimeoutException e) {
+        log.error("网络超时: ", e);
+        return Result.error("请求超时，请稍后重试");
     }
 
     /**

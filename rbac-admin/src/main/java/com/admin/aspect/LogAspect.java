@@ -35,6 +35,14 @@ public class LogAspect {
     /** 日志参数/错误信息最大长度 */
     private static final int MAX_LOG_LENGTH = 2000;
 
+    /** 需要脱敏的字段 */
+    private static final String[] SENSITIVE_FIELDS = {
+            "password", "oldPassword", "newPassword", "confirmPassword",
+            "pwd", "token", "accessToken", "refreshToken",
+            "secret", "apiKey", "apiKey", "privateKey",
+            "phone", "idCard", "bankCard"
+    };
+
     private final SysOperLogMapper operLogMapper;
     private final ObjectMapper objectMapper;
 
@@ -77,12 +85,13 @@ public class LogAspect {
             String methodName = point.getSignature().getName();
             operLog.setMethod(className + "." + methodName + "()");
 
-            // 请求参数
+            // 请求参数（脱敏处理）
             Object[] args = point.getArgs();
             if (args != null && args.length > 0) {
                 try {
                     String param = objectMapper.writeValueAsString(args[0]);
-                    operLog.setOperParam(param.length() > 2000 ? param.substring(0, 2000) : param);
+                    param = sanitizeParams(param);
+                    operLog.setOperParam(param.length() > MAX_LOG_LENGTH ? param.substring(0, MAX_LOG_LENGTH) : param);
                 } catch (Exception ignored) {
                 }
             }
@@ -108,6 +117,23 @@ public class LogAspect {
                 log.error("保存操作日志失败", e);
             }
         }
+    }
+
+    /**
+     * 脱敏处理 - 将敏感字段值替换为 *****
+     */
+    private String sanitizeParams(String param) {
+        if (param == null || param.isEmpty()) {
+            return param;
+        }
+        String result = param;
+        for (String field : SENSITIVE_FIELDS) {
+            // 匹配 "fieldName": "xxx" 或 "fieldName":"xxx" 格式
+            String pattern = "\"" + field + "\"\\s*:\\s*\"[^\"]*\"";
+            String replacement = "\"" + field + "\":\"******\"";
+            result = result.replaceAll(pattern, replacement);
+        }
+        return result;
     }
 
     private Log getAnnotation(ProceedingJoinPoint point) {

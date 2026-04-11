@@ -1,10 +1,18 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 export const useAppStore = defineStore('app', () => {
   const sidebarCollapsed = ref(false)
   const tagsList = ref([])
   const cachedViews = ref([])
+
+  // 全局加载状态
+  const loading = ref(false)
+  const loadingText = ref('加载中...')
+  const requestCount = ref(0)
+
+  // 是否有请求在进行中
+  const isLoading = computed(() => requestCount.value > 0)
 
   function toggleSidebar() {
     sidebarCollapsed.value = !sidebarCollapsed.value
@@ -33,13 +41,42 @@ export const useAppStore = defineStore('app', () => {
     cachedViews.value = []
   }
 
+  // 加载状态控制
+  function startLoading(text = '加载中...') {
+    loadingText.value = text
+    requestCount.value++
+    loading.value = true
+  }
+
+  function stopLoading() {
+    requestCount.value = Math.max(0, requestCount.value - 1)
+    if (requestCount.value === 0) {
+      loading.value = false
+      loadingText.value = '加载中...'
+    }
+  }
+
+  // 强制停止所有加载
+  function forceStopLoading() {
+    requestCount.value = 0
+    loading.value = false
+    loadingText.value = '加载中...'
+  }
+
   return {
     sidebarCollapsed,
     tagsList,
     cachedViews,
+    loading,
+    loadingText,
+    isLoading,
+    requestCount,
     toggleSidebar,
     addTag,
     removeTag,
-    clearTags
+    clearTags,
+    startLoading,
+    stopLoading,
+    forceStopLoading
   }
 })

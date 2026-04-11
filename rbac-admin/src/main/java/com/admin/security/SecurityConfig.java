@@ -42,7 +42,12 @@ public class SecurityConfig {
             "/favicon.ico",
             // 静态资源
             "/static/**",
-            "/uploads/**"
+            "/uploads/**",
+            // AI 聊天（流式接口需要放行，由 Controller 处理权限）
+            "/api/ai/chat/stream",
+            // 监控接口（健康检查无需登录）
+            "/api/monitor/health",
+            "/api/monitor/info"
     };
 
     /**

@@ -35,6 +35,19 @@ export const constantRoutes = [
       }
     ]
   },
+  // AI 智能助手
+  {
+    path: '/ai-chat',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'AiChat',
+        component: () => import('@/views/ai-chat/index.vue'),
+        meta: { title: 'AI 助手', icon: 'MagicStick' }
+      }
+    ]
+  },
   {
     path: '/404',
     name: '404',
